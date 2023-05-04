@@ -1,66 +1,68 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# configuración del cache usando Redis
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+edite el archivo del ambiente (.env)
 
-## About Laravel
+```
+CACHE_DRIVER=redis
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+REDIS_HOST=127.0.0.1
+REDIS_PASSWORD=null
+REDIS_PORT=6379
+```
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+# agregar Redis en php (php 8.2)
+Si no lo tiene configurado, configure Redis en PHP:
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Copie el archivo php_redis.dll (incluido en este repositorio) en la carpeta de extensión de php, ejemplo c:\php\ext
+Luego edite el archivo php.ini (c:\php\php.ini) y agregue la extensión
+(junto con las lineas donde se agregan las extensiones)
 
-## Learning Laravel
+```
+extension=redis
+```
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+# instalar el servidor de redis
+Si no tiene instalado REDIS, instálelo:
+Redis no tiene un instalador oficial en Windows, pero si hay un fork para Windows
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+https://github.com/tporadowski/redis/releases
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 2000 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+Instálelo con las opciones por defecto
 
-## Laravel Sponsors
+# instale una herramienta de GUI para redis
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+https://github.com/qishibo/AnotherRedisDesktopManager/releases
 
-### Premium Partners
+Y abra la herramienta para crear una nueva conexión (si es que no hay alguna conexión creada), con los datos por defecto.
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[OP.GG](https://op.gg)**
-- **[WebReinvent](https://webreinvent.com/?utm_source=laravel&utm_medium=github&utm_campaign=patreon-sponsors)**
-- **[Lendio](https://lendio.com)**
+![docs/redis1.jpg](docs/redis1.jpg)
 
-## Contributing
+Una vez conectado, puede explorar la base de datos. Redis tiene base de datos numeradas del 0 al 16
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+![docs/redis2.jpg](docs/redis2.jpg)
 
-## Code of Conduct
+## Usar el cache
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Para usar el cache vamos a usar la clase Cache (Illuminate\Support\Facades\Cache) y principalmente necesitamos los comandos get (leer) y set(escribir).
 
-## Security Vulnerabilities
+* El comando get permite seleccionar un valor por defecto si el valor no existe
+* El comando set permite seleccionar la duración del valor.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Ejemplo:
 
-## License
+```php
+    public function listar(&$estaCache):Collection {
+        $estaCache="el valor esta en el cache";
+        $computadores=Cache::get('listado',null);  // busca si esta en el cache
+        if($computadores===null) { # si no esta
+            $estaCache="el valor no esta en el cache";
+            $computadores=Computador::all(); // lo lee de la base de datos
+            Cache::set('listado',$computadores,100); // y lo guarda en el cache por 100 segundos.
+        }
+        return $computadores;
+    }
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+# Ejercicio
+
+Modifique el ejercicio de la clase pasada para que todas las lecturas usen cache (no es necesario devolver un texto, como se hizo con el ejemplo de la función listar)
